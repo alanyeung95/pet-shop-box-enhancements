@@ -15,6 +15,7 @@ App = {
         petTemplate.find(".pet-age").text(data[i].age);
         petTemplate.find(".pet-location").text(data[i].location);
         petTemplate.find(".btn-adopt").attr("data-id", data[i].id);
+        petTemplate.find(".btn-return").attr("data-id", data[i].id);
 
         petsRow.append(petTemplate.html());
       }
@@ -68,6 +69,7 @@ App = {
 
   bindEvents: function () {
     $(document).on("click", ".btn-adopt", App.handleAdopt);
+    $(document).on("click", ".btn-return", App.handleReturn);
   },
 
   markAdopted: function () {
@@ -84,15 +86,55 @@ App = {
           if (adopters[i] !== "0x0000000000000000000000000000000000000000") {
             $(".panel-pet")
               .eq(i)
-              .find("button")
+              .find(".btn-adopt")
               .text("Success")
               .attr("disabled", true);
+
+            $(".panel-pet")
+              .eq(i)
+              .find(".btn-return")
+              .css("display", "inline-block");
+          } else {
+            $(".panel-pet")
+              .eq(i)
+              .find(".btn-adopt")
+              .text("Adopt")
+              .attr("disabled", false);
+
+            $(".panel-pet").eq(i).find(".btn-return").css("display", "none");
           }
         }
       })
       .catch(function (err) {
         console.log(err.message);
       });
+  },
+
+  handleReturn: function (event) {
+    event.preventDefault();
+
+    var petId = parseInt($(event.target).data("id"));
+    var adoptionInstance;
+    web3.eth.getAccounts(function (error, accounts) {
+      if (error) {
+        console.log(error);
+      }
+
+      var account = accounts[0];
+
+      App.contracts.Adoption.deployed()
+        .then(function (instance) {
+          adoptionInstance = instance;
+          // Execute adopt as a transaction by sending account
+          return adoptionInstance.returnPet(petId, { from: account });
+        })
+        .then(function (result) {
+          return App.markAdopted();
+        })
+        .catch(function (err) {
+          console.log(err.message);
+        });
+    });
   },
 
   handleAdopt: function (event) {

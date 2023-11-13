@@ -12,6 +12,15 @@ contract Adoption {
         return petId;
     }
 
+    // Returning a pet
+    function returnPet(uint petId) public returns (uint) {
+        require(petId >= 0 && petId <= 15);
+
+        adopters[petId] = address(0);
+
+        return petId;
+    }
+
     // Retrieving the adopters
     function getAdopters() public view returns (address[16] memory) {
         return adopters;
