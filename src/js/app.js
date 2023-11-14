@@ -16,6 +16,7 @@ App = {
         petTemplate.find(".pet-location").text(data[i].location);
         petTemplate.find(".btn-adopt").attr("data-id", data[i].id);
         petTemplate.find(".btn-return").attr("data-id", data[i].id);
+        petTemplate.find(".btn-history").attr("data-id", data[i].id);
 
         petsRow.append(petTemplate.html());
       }
@@ -70,6 +71,8 @@ App = {
   bindEvents: function () {
     $(document).on("click", ".btn-adopt", App.handleAdopt);
     $(document).on("click", ".btn-return", App.handleReturn);
+    $(document).on("click", ".btn-history", App.handleGetAdoptionHistory);
+    $(document).on("click", ".btn-close-history", App.handleHistoryPanelClose);
   },
 
   markAdopted: function () {
@@ -109,34 +112,6 @@ App = {
         console.log(err.message);
       });
   },
-
-  handleReturn: function (event) {
-    event.preventDefault();
-
-    var petId = parseInt($(event.target).data("id"));
-    var adoptionInstance;
-    web3.eth.getAccounts(function (error, accounts) {
-      if (error) {
-        console.log(error);
-      }
-
-      var account = accounts[0];
-
-      App.contracts.Adoption.deployed()
-        .then(function (instance) {
-          adoptionInstance = instance;
-          // Execute adopt as a transaction by sending account
-          return adoptionInstance.returnPet(petId, { from: account });
-        })
-        .then(function (result) {
-          return App.markAdopted();
-        })
-        .catch(function (err) {
-          console.log(err.message);
-        });
-    });
-  },
-
   handleAdopt: function (event) {
     event.preventDefault();
 
@@ -164,6 +139,95 @@ App = {
           console.log(err.message);
         });
     });
+  },
+  handleReturn: function (event) {
+    event.preventDefault();
+
+    var petId = parseInt($(event.target).data("id"));
+    var adoptionInstance;
+    web3.eth.getAccounts(function (error, accounts) {
+      if (error) {
+        console.log(error);
+      }
+
+      var account = accounts[0];
+
+      App.contracts.Adoption.deployed()
+        .then(function (instance) {
+          adoptionInstance = instance;
+          // Execute adopt as a transaction by sending account
+          return adoptionInstance.returnPet(petId, { from: account });
+        })
+        .then(function (result) {
+          return App.markAdopted();
+        })
+        .catch(function (err) {
+          console.log(err.message);
+        });
+    });
+  },
+  handleGetAdoptionHistory: function (event) {
+    event.preventDefault();
+
+    var petId = parseInt($(event.target).data("id"));
+    var adoptionInstance;
+    web3.eth.getAccounts(function (error, accounts) {
+      if (error) {
+        console.log(error);
+      }
+
+      var account = accounts[0];
+
+      App.contracts.Adoption.deployed()
+        .then(function (instance) {
+          adoptionInstance = instance;
+
+          // Call getPetAdoptionHistory from the contract
+          return adoptionInstance.getPetAdoptionHistory(petId, {
+            from: account,
+          });
+        })
+        .then(function (result) {
+          //console.log("Adoption History for petId " + petId + ":", result);
+
+          var historyContent = $("#historyContent");
+          historyContent.empty(); // Clear previous content
+
+          // Loop through each entry in the history
+          for (var i = 0; i < result[0].length; i++) {
+            var user = result[0][i];
+            // According to the BigNumber repo, S stands for sign, E for exponent and C for coefficient (or significand)
+            var timestamp = new Date(result[1][i].c[0] * 1000).toLocaleString();
+            var transactionOrigin = result[2][i];
+            var action = result[3][i].c[0] === 0 ? "Adopted" : "Returned";
+
+            // Format the history entry string
+            var entryString =
+              "Action: " +
+              action +
+              ", Timestamp: " +
+              timestamp +
+              // ", Transaction Origin: " +
+              // transactionOrigin +
+              "\nUser: " + // Newline character added before "User:"
+              user;
+
+            // Append to the modal content
+            historyContent.append(
+              $("<p>").html(entryString.replace(/\n/g, "<br>"))
+            );
+          }
+
+          // Show the modal
+          $("#adoptionHistoryModal").show();
+        })
+        .catch(function (err) {
+          console.log(err.message);
+        });
+    });
+  },
+  handleHistoryPanelClose: function (event) {
+    $("#adoptionHistoryModal").hide();
   },
 };
 

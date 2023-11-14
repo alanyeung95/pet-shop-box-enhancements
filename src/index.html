@@ -26,7 +26,20 @@
           <br/>
         </div>
       </div>
-
+      <div id="adoptionHistoryModal" class="modal" role="dialog">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Adoption History</h4>
+            </div>
+            <div class="modal-body" id="historyContent">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default btn-close-history" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="petsRow" class="row">
         <!-- PETS LOAD HERE -->
       </div>
@@ -46,6 +59,7 @@
             <strong>Location</strong>: <span class="pet-location">Warren, MI</span><br/><br/>
             <button class="btn btn-default btn-adopt" type="button" data-id="0">Adopt</button>
             <button class="btn btn-default btn-return" type="button" data-id="0" style="display: none;">Return</button>
+            <button class="btn btn-default btn-history" type="button" data-id="0">History</button>
           </div>
         </div>
       </div>
