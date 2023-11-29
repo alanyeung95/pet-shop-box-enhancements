@@ -1,6 +1,8 @@
 App = {
   web3Provider: null,
   contracts: {},
+  account: '0x0',
+  hasVoted: false,
 
   init: async function () {
     // Load pets.
@@ -65,6 +67,25 @@ App = {
       return App.markAdopted();
     });
 
+    $.getJSON("Election.json", function(election) {
+      // Instantiate a new truffle contract from the artifact
+      App.contracts.Election = TruffleContract(election);
+      // Connect provider to interact with contract
+      App.contracts.Election.setProvider(App.web3Provider);
+      App.listenForEvents();
+      return App.render();
+    });
+
+    //new
+    $.getJSON("SendMeEther.json", function(data) {
+      // Get the contract artifact file and instantiate it with @truffle/contract
+      var SendMeEtherArtifact = data;
+      App.contracts.SendMeEther = TruffleContract(SendMeEtherArtifact);
+
+      // Set the provider for the contract
+      App.contracts.SendMeEther.setProvider(App.web3Provider);
+    });
+
     return App.bindEvents();
   },
 
@@ -73,7 +94,41 @@ App = {
     $(document).on("click", ".btn-return", App.handleReturn);
     $(document).on("click", ".btn-history", App.handleGetAdoptionHistory);
     $(document).on("click", ".btn-close-history", App.handleHistoryPanelClose);
+
+    //new
+    $(document).on("click", ".btn-donate", App.handleDonation);
   },
+
+  //new
+  handleDonation: function(event) {
+    event.preventDefault();
+    var amount = web3.toWei(0.1, "ether"); // Change the amount to your desired value
+    var sendMeEtherInstance;
+
+    web3.eth.getAccounts(function(error, accounts) {
+        if (error) {
+            console.log(error);
+        }
+
+        var account = accounts[0];
+
+        App.contracts.SendMeEther.deployed().then(function(instance) {
+            sendMeEtherInstance = instance;
+
+            // Send Ether to the contract using the receiveEther function
+            return sendMeEtherInstance.receiveEther({
+                from: account,
+                value: amount
+            });
+        }).then(function(result) {
+            // Optionally, update UI or perform actions after donation
+            console.log("Donation successful:", result);
+        }).catch(function(err) {
+            console.log(err.message);
+        });
+    });
+},
+  //end new
 
   markAdopted: function () {
     var adoptionInstance;
@@ -229,6 +284,95 @@ App = {
   handleHistoryPanelClose: function (event) {
     $("#adoptionHistoryModal").hide();
   },
+
+  listenForEvents: function() {
+    App.contracts.Election.deployed().then(function(instance) {
+      instance.votedEvent({}, {
+        fromBlock: 0,
+        toBlock: 'latest'
+      }).watch(function(error, event) {
+        console.log("event triggered", event)
+        // Reload when a new vote is recorded
+        App.render();
+      });
+    });
+  },
+
+render: function() {
+var electionInstance;
+var loader = $("#loader");
+var content = $("#content");
+
+loader.show();
+content.hide();
+
+// Load account data
+web3.eth.getCoinbase(function(err, account) {
+  if (err === null) {
+    App.account = account;
+    $("#accountAddress").html("Your Account: " + account);
+  }
+});
+
+// Load contract data
+//the reason why Promise.all is necessary here is explained in ElectionMapping.txt
+App.contracts.Election.deployed().then(function(instance) {
+  electionInstance = instance;
+  return electionInstance.candidatesCount();
+}).then(function(candidatesCount) {
+  var candArray = [];
+  for (var i = 1; i <= candidatesCount; i++) {
+    candArray.push(electionInstance.candidates(i));
+  }
+  Promise.all(candArray).then(function(values) {
+      var candidatesResults = $("#candidatesResults");
+      candidatesResults.empty();
+
+      var candidatesSelect = $('#candidatesSelect');
+      candidatesSelect.empty();
+    for (var i = 0; i < candidatesCount; i++) {
+      var id = values[i][0];
+      var name = values[i][1];
+      var voteCount = values[i][2];
+
+      // Render candidate Result
+      var candidateTemplate = "<tr><th>" + id + "</th><td>" + name + "</td><td>" + voteCount + "</td></tr>"
+      candidatesResults.append(candidateTemplate);
+
+      // Render candidate ballot option
+      var candidateOption = "<option value='" + id + "' >" + name + "</ option>"
+      candidatesSelect.append(candidateOption);
+    }
+  });
+  return electionInstance.voters(App.account);
+}).then(function(hasVoted) {
+  // Do not allow a user to vote
+  if(hasVoted) {
+    $('form').hide();
+  }
+  loader.hide();
+  content.show();
+}).catch(function(error) {
+  console.warn(error);
+});
+  },
+
+
+
+
+  castVote: function() {
+    var candidateId = $('#candidatesSelect').val();
+    App.contracts.Election.deployed().then(function(instance) {
+      return instance.vote(candidateId, { from: App.account });
+    }).then(function(result) {
+      // Wait for votes to update
+      $("#content").hide();
+      $("#loader").show();
+    }).catch(function(err) {
+      console.error(err);
+    });
+  }
+
 };
 
 $(function () {
