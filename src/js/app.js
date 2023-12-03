@@ -9,6 +9,13 @@ App = {
     $.getJSON("../pets.json", function (data) {
       var petsRow = $("#petsRow");
       var petTemplate = $("#petTemplate");
+      var breeds = [...new Set(data.map(pet => pet.breed))];
+      var breedFilter = $("#breedFilter");
+      breeds.forEach(breed => breedFilter.append(`<option value="${breed}">${breed}</option>`));
+
+      breedFilter.on("change", updateFilteredPets);
+      $("#ageFilter").on("input", updateFilteredPets);
+      $("#filterType").on("change", updateFilteredPets);
 
       for (i = 0; i < data.length; i++) {
         petTemplate.find(".panel-title").text(data[i].name);
@@ -23,6 +30,9 @@ App = {
         petsRow.append(petTemplate.html());
       }
     });
+
+
+    renderPets(data);
 
     return await App.initWeb3();
   },
@@ -67,7 +77,7 @@ App = {
       return App.markAdopted();
     });
 
-    $.getJSON("Election.json", function(election) {
+    $.getJSON("Election.json", function (election) {
       // Instantiate a new truffle contract from the artifact
       App.contracts.Election = TruffleContract(election);
       // Connect provider to interact with contract
@@ -77,7 +87,7 @@ App = {
     });
 
     //new
-    $.getJSON("SendMeEther.json", function(data) {
+    $.getJSON("SendMeEther.json", function (data) {
       // Get the contract artifact file and instantiate it with @truffle/contract
       var SendMeEtherArtifact = data;
       App.contracts.SendMeEther = TruffleContract(SendMeEtherArtifact);
@@ -100,34 +110,34 @@ App = {
   },
 
   //new
-  handleDonation: function(event) {
+  handleDonation: function (event) {
     event.preventDefault();
     var amount = web3.toWei(0.1, "ether"); // Change the amount to your desired value
     var sendMeEtherInstance;
 
-    web3.eth.getAccounts(function(error, accounts) {
-        if (error) {
-            console.log(error);
-        }
+    web3.eth.getAccounts(function (error, accounts) {
+      if (error) {
+        console.log(error);
+      }
 
-        var account = accounts[0];
+      var account = accounts[0];
 
-        App.contracts.SendMeEther.deployed().then(function(instance) {
-            sendMeEtherInstance = instance;
+      App.contracts.SendMeEther.deployed().then(function (instance) {
+        sendMeEtherInstance = instance;
 
-            // Send Ether to the contract using the receiveEther function
-            return sendMeEtherInstance.receiveEther({
-                from: account,
-                value: amount
-            });
-        }).then(function(result) {
-            // Optionally, update UI or perform actions after donation
-            console.log("Donation successful:", result);
-        }).catch(function(err) {
-            console.log(err.message);
+        // Send Ether to the contract using the receiveEther function
+        return sendMeEtherInstance.receiveEther({
+          from: account,
+          value: amount
         });
+      }).then(function (result) {
+        // Optionally, update UI or perform actions after donation
+        console.log("Donation successful:", result);
+      }).catch(function (err) {
+        console.log(err.message);
+      });
     });
-},
+  },
   //end new
 
   markAdopted: function () {
@@ -167,6 +177,7 @@ App = {
         console.log(err.message);
       });
   },
+
   handleAdopt: function (event) {
     event.preventDefault();
 
@@ -195,6 +206,7 @@ App = {
         });
     });
   },
+
   handleReturn: function (event) {
     event.preventDefault();
 
@@ -221,6 +233,7 @@ App = {
         });
     });
   },
+
   handleGetAdoptionHistory: function (event) {
     event.preventDefault();
 
@@ -285,12 +298,12 @@ App = {
     $("#adoptionHistoryModal").hide();
   },
 
-  listenForEvents: function() {
-    App.contracts.Election.deployed().then(function(instance) {
+  listenForEvents: function () {
+    App.contracts.Election.deployed().then(function (instance) {
       instance.votedEvent({}, {
         fromBlock: 0,
         toBlock: 'latest'
-      }).watch(function(error, event) {
+      }).watch(function (error, event) {
         console.log("event triggered", event)
         // Reload when a new vote is recorded
         App.render();
@@ -298,82 +311,130 @@ App = {
     });
   },
 
-render: function() {
-var electionInstance;
-var loader = $("#loader");
-var content = $("#content");
+  render: function () {
+    var electionInstance;
+    var loader = $("#loader");
+    var content = $("#content");
 
-loader.show();
-content.hide();
+    loader.show();
+    content.hide();
 
-// Load account data
-web3.eth.getCoinbase(function(err, account) {
-  if (err === null) {
-    App.account = account;
-    $("#accountAddress").html("Your Account: " + account);
-  }
-});
+    // Load account data
+    web3.eth.getCoinbase(function (err, account) {
+      if (err === null) {
+        App.account = account;
+        $("#accountAddress").html("Your Account: " + account);
+      }
+    });
 
-// Load contract data
-//the reason why Promise.all is necessary here is explained in ElectionMapping.txt
-App.contracts.Election.deployed().then(function(instance) {
-  electionInstance = instance;
-  return electionInstance.candidatesCount();
-}).then(function(candidatesCount) {
-  var candArray = [];
-  for (var i = 1; i <= candidatesCount; i++) {
-    candArray.push(electionInstance.candidates(i));
-  }
-  Promise.all(candArray).then(function(values) {
-      var candidatesResults = $("#candidatesResults");
-      candidatesResults.empty();
+    // Load contract data
+    //the reason why Promise.all is necessary here is explained in ElectionMapping.txt
+    App.contracts.Election.deployed().then(function (instance) {
+      electionInstance = instance;
+      return electionInstance.candidatesCount();
+    }).then(function (candidatesCount) {
+      var candArray = [];
+      for (var i = 1; i <= candidatesCount; i++) {
+        candArray.push(electionInstance.candidates(i));
+      }
+      Promise.all(candArray).then(function (values) {
+        var candidatesResults = $("#candidatesResults");
+        candidatesResults.empty();
 
-      var candidatesSelect = $('#candidatesSelect');
-      candidatesSelect.empty();
-    for (var i = 0; i < candidatesCount; i++) {
-      var id = values[i][0];
-      var name = values[i][1];
-      var voteCount = values[i][2];
+        var candidatesSelect = $('#candidatesSelect');
+        candidatesSelect.empty();
+        for (var i = 0; i < candidatesCount; i++) {
+          var id = values[i][0];
+          var name = values[i][1];
+          var voteCount = values[i][2];
 
-      // Render candidate Result
-      var candidateTemplate = "<tr><th>" + id + "</th><td>" + name + "</td><td>" + voteCount + "</td></tr>"
-      candidatesResults.append(candidateTemplate);
+          // Render candidate Result
+          var candidateTemplate = "<tr><th>" + id + "</th><td>" + name + "</td><td>" + voteCount + "</td></tr>"
+          candidatesResults.append(candidateTemplate);
 
-      // Render candidate ballot option
-      var candidateOption = "<option value='" + id + "' >" + name + "</ option>"
-      candidatesSelect.append(candidateOption);
-    }
-  });
-  return electionInstance.voters(App.account);
-}).then(function(hasVoted) {
-  // Do not allow a user to vote
-  if(hasVoted) {
-    $('form').hide();
-  }
-  loader.hide();
-  content.show();
-}).catch(function(error) {
-  console.warn(error);
-});
+          // Render candidate ballot option
+          var candidateOption = "<option value='" + id + "' >" + name + "</ option>"
+          candidatesSelect.append(candidateOption);
+        }
+      });
+      return electionInstance.voters(App.account);
+    }).then(function (hasVoted) {
+      // Do not allow a user to vote
+      if (hasVoted) {
+        $('form').hide();
+      }
+      loader.hide();
+      content.show();
+    }).catch(function (error) {
+      console.warn(error);
+    });
   },
 
 
+  // Function to update filtered pets based on selected criteria
+  updateFilteredPets: function () {
+    var selectedFilterType = $("#filterType").val();
+    var selectedBreed = $("#breedFilter").val();
+    var selectedAge = $("#ageFilter").val();
+
+    // Apply the appropriate filter based on the user's selection
+    if (selectedFilterType === "age") {
+      // Sort pets by age in ascending order
+      var filteredPets = data.slice().sort((a, b) => a.age - b.age);
+      renderPets(filteredPets);
+    } else if (selectedFilterType === "breed") {
+      // Filter pets based on selected breed
+      var filteredPets = data.filter(pet => selectedBreed === "all" || pet.breed === selectedBreed);
+      renderPets(filteredPets);
+    }
+  },
+
+  // Function to render pets
+  renderPets: function (pets) {
+    var petsRow = $("#petsRow");
+    var petTemplate = $("#petTemplate");
+
+    // Clear existing pets
+    petsRow.empty();
+
+    for (var i = 0; i < pets.length; i++) {
+      var pet = pets[i];
+
+      // Clone the pet template
+      var newPet = petTemplate.clone();
+
+      // Update the content of the cloned template with pet information
+      newPet.find(".panel-title").text(pet.name);
+      newPet.find("img").attr("src", pet.picture);
+      newPet.find(".pet-breed").text(pet.breed);
+      newPet.find(".pet-age").text(pet.age);
+      newPet.find(".pet-location").text(pet.location);
+      newPet.find(".btn-adopt").attr("data-id", pet.id);
+      newPet.find(".btn-return").attr("data-id", pet.id);
+      newPet.find(".btn-history").attr("data-id", pet.id);
+
+      // Append the updated template to the petsRow
+      petsRow.append(newPet.html());
+    }
+  },
 
 
-  castVote: function() {
+  castVote: function () {
     var candidateId = $('#candidatesSelect').val();
-    App.contracts.Election.deployed().then(function(instance) {
+    App.contracts.Election.deployed().then(function (instance) {
       return instance.vote(candidateId, { from: App.account });
-    }).then(function(result) {
+    }).then(function (result) {
       // Wait for votes to update
       $("#content").hide();
       $("#loader").show();
-    }).catch(function(err) {
+    }).catch(function (err) {
       console.error(err);
     });
   }
 
 };
+
+
 
 $(function () {
   $(window).load(function () {
