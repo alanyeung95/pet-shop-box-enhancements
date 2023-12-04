@@ -450,7 +450,7 @@ App = {
 
   // Function to render pets
   renderPets: function (pets) {
-
+    console.log("renderpets");
     var petsRow = $("#petsRow");
     var petTemplate = $("#petTemplate");
 
@@ -470,7 +470,9 @@ App = {
       newPet.find(".pet-breed").text(pet.breed);
       newPet.find(".pet-age").text(pet.age);
       newPet.find(".pet-location").text(pet.location);
-      if (pet.adopted == true) {
+      var adopted = App.checkAdopted(pet.id);
+      console.log("adopted: " + adopted);
+      if (adopted == 1) {
         newPet
           .find(".btn-adopt")
           .text("Success")
@@ -486,15 +488,49 @@ App = {
           .attr("disabled", false);
 
         newPet.find(".btn-return").css("display", "none");
-      }
+      };
       // newPet.find(".btn-adopt").attr("data-id", pet.id);
       // newPet.find(".btn-return").attr("data-id", pet.id);
       // newPet.find(".btn-history").attr("data-id", pet.id);
 
-
       // Append the updated template to the petsRow
       petsRow.append(newPet.html());
-    }
+    };
+  },
+
+  checkAdopted: function (petid) {
+    var adoptionInstance;
+    web3.eth.getAccounts(function (error, accounts) {
+      if (error) {
+        console.log(error);
+      };
+
+      var account = accounts[0];
+
+      App.contracts.Adoption.deployed()
+        .then(function (instance) {
+          adoptionInstance = instance;
+
+          // Call getPetAdoptionHistory from the contract
+          return adoptionInstance.getPetAdoptionHistory(petid, {
+            from: account,
+          });
+        })
+        .then(function (result) {
+          // var users = result[0];
+          // var timestamps = result[1];
+          // var transactionOrigins = result[2];
+          var actions = result[3][result.length - 1].c[0];
+          if (actions == 0) {
+            return 0;
+          } else {
+            return 1;
+          };
+        })
+        .catch(function (err) {
+          console.error(err);
+        });
+    });
   },
 
   setPetsInfo: function (data) {
@@ -513,6 +549,7 @@ App = {
       console.error(err);
     });
   }
+
 
 };
 
