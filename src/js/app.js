@@ -215,14 +215,14 @@ App = {
       App.contracts.Adoption.deployed()
         .then(function (instance) {
           adoptionInstance = instance;
-          // Set the adopted property of the pet to true
-          App.petsinfo[petId].adopted = true;
-          console.log("adopted petId: " + petId);
+
           // Execute adopt as a transaction by sending account
           return adoptionInstance.adopt(petId, { from: account });
         })
         .then(function (result) {
-
+          // Set the adopted property of the pet to true
+          App.petsinfo[petId].adopted = true;
+          console.log("adopted petId: " + petId);
           return App.markAdopted();
         })
         .catch(function (err) {
@@ -246,13 +246,15 @@ App = {
       App.contracts.Adoption.deployed()
         .then(function (instance) {
           adoptionInstance = instance;
-          // Set the adopted property of the pet to false
-          App.petsinfo[petId].adopted = false;
-          console.log("returned petId: " + petId);
+
+
           // Execute adopt as a transaction by sending account
           return adoptionInstance.returnPet(petId, { from: account });
         })
         .then(function (result) {
+          // Set the adopted property of the pet to false
+          App.petsinfo[petId].adopted = false;
+          console.log("returned petId: " + petId);
           return App.markAdopted();
         })
         .catch(function (err) {
