@@ -21,25 +21,54 @@
 
 <body>
 
+
+
   <!--New Line-->>
   <button class="btn btn-default btn-donate" type="button" data-id="0">SendMeEther</button>
 
   <div class="container">
-    <label for="filterType">Filter by:</label>
-    <select id="filterType">
-      <option value="age">Age</option>
-      <option value="breed">Breed</option>
+    <label for="filterType">Filt by :</label>
+    <select id="filterType" onchange="showFilterOptions()">
+      <option value="all">All Pets</option>
+      <option value="available">Available Pets</option>
+      <option value="adopted">Adopted Pets</option>
     </select>
 
-    <label for="breedFilter">Breed:</label>
-    <select id="breedFilter">
-      <option value="all">All Breeds</option>
-      <!-- Breed options will be populated dynamically using JavaScript -->
-    </select>
+    <div id="wrapper">
+      <label for="filterOptions">Sort by:</label>
+      <select id="filterOptions" onclick="showSortOptions()">
+        <option value="all">All</option>
+        <option value="age">Ages</option>
+        <option value="breed">Breeds</option>
+        <option value="location">Locations</option>
+      </select>
 
-    <label for="ageFilter">Age:</label>
-    <input type="text" id="ageFilter" placeholder="Enter Age">
+      <div id="age" style="display: none;">
+        <label for="age">Select Age:</label>
+        <select id="ageFilter">
+          <option value="all age">All Ages</option>
+        </select>
+      </div>
+
+      <div id="breed" style="display: none;">
+        <label for="breed">Select Breed:</label>
+        <select id="breedFilter">
+          <option value="all breed">All Breeds</option>
+        </select>
+      </div>
+
+      <div id="location" style="display: none;">
+        <label for="location">Select Location:</label>
+        <select id="locationFilter">
+          <option value="all location">All Locations</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-default btn-filter" type="button" id="fitlerbutton">Apply Filter</button>
   </div>
+
+
 
 
   <div class="container">
@@ -134,6 +163,37 @@
   <script src="js/web3.min.js"></script>
   <script src="js/truffle-contract.js"></script>
   <script src="js/app.js"></script>
+  <script>
+    function showSortOptions() {
+      var selectedValue = $("#filterOptions").val();
+      $("#age, #breed, #location").hide();
+
+      if (selectedValue === "age") {
+        $("#age").show();
+      } else if (selectedValue === "breed") {
+        $("#breed").show();
+      } else if (selectedValue === "location") {
+        $("#location").show();
+      }
+    }
+  </script>
+
+  <script>
+    function showFilterOptions() {
+      var selectedValue = $("#filterType").val();
+      $("#filterOptions").hide();
+
+      if (selectedValue === "all") {
+        $("#filterOptions").show();
+      } else if (selectedValue === "available") {
+        $("#filterOptions").show();
+      } else if (selectedValue === "adopted") {
+        $("#filterOptions").show();
+      }
+    }
+  </script>
+
+
 </body>
 
 </html>

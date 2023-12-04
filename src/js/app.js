@@ -4,18 +4,25 @@ App = {
   account: '0x0',
   hasVoted: false,
 
+
   init: async function () {
     // Load pets.
     $.getJSON("../pets.json", function (data) {
       var petsRow = $("#petsRow");
       var petTemplate = $("#petTemplate");
-      var breeds = [...new Set(data.map(pet => pet.breed))];
-      var breedFilter = $("#breedFilter");
-      breeds.forEach(breed => breedFilter.append(`<option value="${breed}">${breed}</option>`));
+      App.petsinfo = data;
 
-      breedFilter.on("change", updateFilteredPets);
-      $("#ageFilter").on("input", updateFilteredPets);
-      $("#filterType").on("change", updateFilteredPets);
+
+      var breeds = [...new Set(data.map(pet => pet.breed))];
+      var ages = [...new Set(data.map(pet => pet.age))];
+      var locations = [...new Set(data.map(pet => pet.location))]
+      var breedFilter = $("#breedFilter");
+      var ageFilter = $("#ageFilter");
+      var locationFilter = $("#locationFilter");
+      breeds.forEach(breed => breedFilter.append(`<option value="${breed}">${breed}</option>`));
+      ages.forEach(age => ageFilter.append(`<option value="${age}">${age}</option>`));
+      locations.forEach(location => locationFilter.append(`<option value="${location}">${location}</option>`));
+
 
       for (i = 0; i < data.length; i++) {
         petTemplate.find(".panel-title").text(data[i].name);
@@ -30,9 +37,6 @@ App = {
         petsRow.append(petTemplate.html());
       }
     });
-
-
-    renderPets(data);
 
     return await App.initWeb3();
   },
@@ -107,6 +111,23 @@ App = {
 
     //new
     $(document).on("click", ".btn-donate", App.handleDonation);
+
+    // filter
+    $(document).on("click", '.btn-filter', App.updateFilteredPets);
+
+    // $('#filterType').change(function () {
+    //   var selectedFilterType = $(this).val();
+    //   if (selectedFilterType === "age") {
+    //     $("#breedFilter").prop('disabled', true);
+    //     $("#ageFilter").prop('disabled', false);
+    //   } else if (selectedFilterType === "breed") {
+    //     $("#breedFilter").prop('disabled', false);
+    //     $("#ageFilter").prop('disabled', true);
+    //   }
+    // });
+
+
+
   },
 
   //new
@@ -194,11 +215,14 @@ App = {
       App.contracts.Adoption.deployed()
         .then(function (instance) {
           adoptionInstance = instance;
-
+          // Set the adopted property of the pet to true
+          App.petsinfo[petId].adopted = true;
+          console.log("adopted petId: " + petId);
           // Execute adopt as a transaction by sending account
           return adoptionInstance.adopt(petId, { from: account });
         })
         .then(function (result) {
+
           return App.markAdopted();
         })
         .catch(function (err) {
@@ -222,6 +246,9 @@ App = {
       App.contracts.Adoption.deployed()
         .then(function (instance) {
           adoptionInstance = instance;
+          // Set the adopted property of the pet to false
+          App.petsinfo[petId].adopted = false;
+          console.log("returned petId: " + petId);
           // Execute adopt as a transaction by sending account
           return adoptionInstance.returnPet(petId, { from: account });
         })
@@ -373,26 +400,68 @@ App = {
 
   // Function to update filtered pets based on selected criteria
   updateFilteredPets: function () {
+
+    console.log("filterpets");
+    var data = App.petsinfo;
     var selectedFilterType = $("#filterType").val();
+    var selectedSortOption = $("#filterOptions").val();
     var selectedBreed = $("#breedFilter").val();
     var selectedAge = $("#ageFilter").val();
+    var selectedLocation = $("#locationFilter").val();
 
-    // Apply the appropriate filter based on the user's selection
-    if (selectedFilterType === "age") {
-      // Sort pets by age in ascending order
-      var filteredPets = data.slice().sort((a, b) => a.age - b.age);
-      renderPets(filteredPets);
-    } else if (selectedFilterType === "breed") {
-      // Filter pets based on selected breed
-      var filteredPets = data.filter(pet => selectedBreed === "all" || pet.breed === selectedBreed);
-      renderPets(filteredPets);
+
+    if (selectedFilterType == "all") {
+      var filteredPets = data;
+      App.renderPets(filteredPets);
+    } else if (selectedFilterType == "available") {
+      var filteredPets = data.filter(pet => pet.adopted == false);
+      App.renderPets(filteredPets);
+    } else if (selectedFilterType == "adopted") {
+      var filteredPets = data.filter(pet => pet.adopted == true);
+
+    }
+
+
+    if (selectedSortOption === "all") {
+      filteredPets = filteredPets;
+    }
+    else if (selectedSortOption === "age") {
+      if (selectedAge === "all age") {
+        filteredPets = filteredPets;
+        App.renderPets(filteredPets);
+      } else {
+        filteredPets = filteredPets.filter(pet => pet.age == selectedAge);
+        App.renderPets(filteredPets);
+      }
+    }
+    else if (selectedSortOption === "breed") {
+      if (selectedBreed === "all breed") {
+        filteredPets = filteredPets;
+        App.renderPets(filteredPets);
+      } else {
+        filteredPets = filteredPets.filter(pet => pet.breed === selectedBreed);
+        App.renderPets(filteredPets);
+      }
+    }
+    else if (selectedSortOption === "location") {
+      if (selectedLocation === "all location") {
+        filteredPets = filteredPets;
+        App.renderPets(filteredPets);
+      } else {
+        filteredPets = filteredPets.filter(pet => pet.location === selectedLocation);
+        App.renderPets(filteredPets);
+      }
     }
   },
 
+
+
   // Function to render pets
   renderPets: function (pets) {
+
     var petsRow = $("#petsRow");
     var petTemplate = $("#petTemplate");
+
 
     // Clear existing pets
     petsRow.empty();
@@ -409,9 +478,27 @@ App = {
       newPet.find(".pet-breed").text(pet.breed);
       newPet.find(".pet-age").text(pet.age);
       newPet.find(".pet-location").text(pet.location);
+      if (pet.adopted == true) {
+        newPet
+          .find(".btn-adopt")
+          .text("Success")
+          .attr("disabled", true);
+
+        newPet
+          .find(".btn-return")
+          .css("display", "inline-block");
+      } else {
+        newPet
+          .find(".btn-adopt")
+          .text("Adopt")
+          .attr("disabled", false);
+
+        newPet.find(".btn-return").css("display", "none");
+      }
       newPet.find(".btn-adopt").attr("data-id", pet.id);
       newPet.find(".btn-return").attr("data-id", pet.id);
       newPet.find(".btn-history").attr("data-id", pet.id);
+
 
       // Append the updated template to the petsRow
       petsRow.append(newPet.html());
