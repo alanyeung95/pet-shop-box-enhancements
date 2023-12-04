@@ -3,14 +3,15 @@ App = {
   contracts: {},
   account: '0x0',
   hasVoted: false,
-
+  petsinfo: [],
 
   init: async function () {
     // Load pets.
     $.getJSON("../pets.json", function (data) {
       var petsRow = $("#petsRow");
       var petTemplate = $("#petTemplate");
-      App.petsinfo = data;
+      // App.petsinfo = data;
+      App.setPetsInfo(data);
 
 
       var breeds = [...new Set(data.map(pet => pet.breed))];
@@ -115,18 +116,6 @@ App = {
     // filter
     $(document).on("click", '.btn-filter', App.updateFilteredPets);
 
-    // $('#filterType').change(function () {
-    //   var selectedFilterType = $(this).val();
-    //   if (selectedFilterType === "age") {
-    //     $("#breedFilter").prop('disabled', true);
-    //     $("#ageFilter").prop('disabled', false);
-    //   } else if (selectedFilterType === "breed") {
-    //     $("#breedFilter").prop('disabled', false);
-    //     $("#ageFilter").prop('disabled', true);
-    //   }
-    // });
-
-
 
   },
 
@@ -221,7 +210,7 @@ App = {
         })
         .then(function (result) {
           // Set the adopted property of the pet to true
-          App.petsinfo[petId].adopted = true;
+          petsinfo[petId].adopted = true;
           console.log("adopted petId: " + petId);
           return App.markAdopted();
         })
@@ -253,7 +242,7 @@ App = {
         })
         .then(function (result) {
           // Set the adopted property of the pet to false
-          App.petsinfo[petId].adopted = false;
+          petsinfo[petId].adopted = false;
           console.log("returned petId: " + petId);
           return App.markAdopted();
         })
@@ -404,7 +393,7 @@ App = {
   updateFilteredPets: function () {
 
     console.log("filterpets");
-    var data = App.petsinfo;
+    var data = petsinfo;
     var selectedFilterType = $("#filterType").val();
     var selectedSortOption = $("#filterOptions").val();
     var selectedBreed = $("#breedFilter").val();
@@ -426,6 +415,7 @@ App = {
 
     if (selectedSortOption === "all") {
       filteredPets = filteredPets;
+      App.renderPets(filteredPets);
     }
     else if (selectedSortOption === "age") {
       if (selectedAge === "all age") {
@@ -497,9 +487,9 @@ App = {
 
         newPet.find(".btn-return").css("display", "none");
       }
-      newPet.find(".btn-adopt").attr("data-id", pet.id);
-      newPet.find(".btn-return").attr("data-id", pet.id);
-      newPet.find(".btn-history").attr("data-id", pet.id);
+      // newPet.find(".btn-adopt").attr("data-id", pet.id);
+      // newPet.find(".btn-return").attr("data-id", pet.id);
+      // newPet.find(".btn-history").attr("data-id", pet.id);
 
 
       // Append the updated template to the petsRow
@@ -507,6 +497,9 @@ App = {
     }
   },
 
+  setPetsInfo: function (data) {
+    petsinfo = data;
+  },
 
   castVote: function () {
     var candidateId = $('#candidatesSelect').val();
