@@ -1,117 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Pete's Pet Shop</title>
 
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+  <title>Pete's Pet Shop</title>
 
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
+  <!-- Bootstrap -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
-  </head>
-  <body>
+</head>
 
-    <!--New Line-->>
-    <button class="btn btn-default btn-donate" type="button" data-id="0">SendMeEther</button>
+<body>
 
-    <div class="container">
-      <div class="row">
-        <div class="col-xs-12 col-sm-8 col-sm-push-2">
-          <h1 class="text-center">Pete's Pet Shop</h1>
-          <hr/>
-          <br/>
-        </div>
+
+
+  <!--New Line-->>
+  <button class="btn btn-default btn-donate" type="button" data-id="0">SendMeEther</button>
+
+  <div class="container">
+    <label for="filterType">Filt by :</label>
+    <select id="filterType" onchange="showFilterOptions()">
+      <option value="all">All Pets</option>
+      <option value="available">Available Pets</option>
+      <option value="adopted">Adopted Pets</option>
+    </select>
+
+    <div id="wrapper">
+      <label for="filterOptions">Sort by:</label>
+      <select id="filterOptions" onclick="showSortOptions()">
+        <option value="all">All</option>
+        <option value="age">Ages</option>
+        <option value="breed">Breeds</option>
+        <option value="location">Locations</option>
+      </select>
+
+      <div id="age" style="display: none;">
+        <label for="age">Select Age:</label>
+        <select id="ageFilter">
+          <option value="all age">All Ages</option>
+        </select>
       </div>
-      <div id="adoptionHistoryModal" class="modal" role="dialog">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Adoption History</h4>
-            </div>
-            <div class="modal-body" id="historyContent">
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default btn-close-history" data-dismiss="modal">Close</button>
-            </div>
-          </div>
-        </div>
+
+      <div id="breed" style="display: none;">
+        <label for="breed">Select Breed:</label>
+        <select id="breedFilter">
+          <option value="all breed">All Breeds</option>
+        </select>
       </div>
-      <div id="petsRow" class="row">
-        <!-- PETS LOAD HERE -->
+
+      <div id="location" style="display: none;">
+        <label for="location">Select Location:</label>
+        <select id="locationFilter">
+          <option value="all location">All Locations</option>
+        </select>
       </div>
     </div>
 
-    <div id="petTemplate" style="display: none;">
-      <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="panel panel-default panel-pet">
-          <div class="panel-heading">
-            <h3 class="panel-title">Scrappy</h3>
-          </div>
-          <div class="panel-body">
-            <img alt="140x140" data-src="holder.js/140x140" class="img-rounded img-center" style="width: 100%;" src="https://animalso.com/wp-content/uploads/2017/01/Golden-Retriever_6.jpg" data-holder-rendered="true">
-            <br/><br/>
-            <strong>Breed</strong>: <span class="pet-breed">Golden Retriever</span><br/>
-            <strong>Age</strong>: <span class="pet-age">3</span><br/>
-            <strong>Location</strong>: <span class="pet-location">Warren, MI</span><br/><br/>
-            <button class="btn btn-default btn-adopt" type="button" data-id="0">Adopt</button>
-            <button class="btn btn-default btn-return" type="button" data-id="0" style="display: none;">Return</button>
-            <button class="btn btn-default btn-history" type="button" data-id="0">History</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="container" style="width: 650px;">
-      <div class="row">
-          <div class="col-lg-12">
-              <h1 class="text-center">Voting for The Best Pet</h1>
-              <hr />
-              <br />
-              <div id="loader">
-                  <p class="text-center">Loading...</p>
-              </div>
-              <div id="content" style="display: none;">
-                  <table class="table">
-                      <thead>
-                          <tr>
-                              <th scope="col">#</th>
-                              <th scope="col">Name</th>
-                              <th scope="col">Votes</th>
-                          </tr>
-                      </thead>
-                      <tbody id="candidatesResults">
-                      </tbody>
-                  </table>
-                  <hr />
-                  <form onsubmit="App.castVote(); return false;">
-                      <div class="form-group">
-                          <label for="candidatesSelect">Select Candidate</label>
-                          <select class="form-control" id="candidatesSelect">
-                          </select>
-                      </div>
-                      <button type="submit" class="btn btn-primary">Vote</button>
-                  </form>
-                  <hr />
-                  <p id="accountAddress" class="text-center"></p>
-              </div>
-          </div>
-      </div>
+    <button class="btn btn-default btn-filter" type="button" id="fitlerbutton">Apply Filter</button>
   </div>
 
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/web3.min.js"></script>
-    <script src="js/truffle-contract.js"></script>
-    <script src="js/app.js"></script>
-  </body>
+
+
+
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12 col-sm-8 col-sm-push-2">
+        <h1 class="text-center">Pete's Pet Shop</h1>
+        <hr />
+        <br />
+      </div>
+    </div>
+    <div id="adoptionHistoryModal" class="modal" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Adoption History</h4>
+          </div>
+          <div class="modal-body" id="historyContent">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-close-history" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="petsRow" class="row">
+      <!-- PETS LOAD HERE -->
+    </div>
+  </div>
+
+  <div id="petTemplate" style="display: none;">
+    <div class="col-sm-6 col-md-4 col-lg-3">
+      <div class="panel panel-default panel-pet">
+        <div class="panel-heading">
+          <h3 class="panel-title">Scrappy</h3>
+        </div>
+        <div class="panel-body">
+          <img alt="140x140" data-src="holder.js/140x140" class="img-rounded img-center" style="width: 100%;"
+            src="https://animalso.com/wp-content/uploads/2017/01/Golden-Retriever_6.jpg" data-holder-rendered="true">
+          <br /><br />
+          <strong>Breed</strong>: <span class="pet-breed">Golden Retriever</span><br />
+          <strong>Age</strong>: <span class="pet-age">3</span><br />
+          <strong>Location</strong>: <span class="pet-location">Warren, MI</span><br /><br />
+          <button class="btn btn-default btn-adopt" type="button" data-id="0">Adopt</button>
+          <button class="btn btn-default btn-return" type="button" data-id="0" style="display: none;">Return</button>
+          <button class="btn btn-default btn-history" type="button" data-id="0">History</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" style="width: 650px;">
+    <div class="row">
+      <div class="col-lg-12">
+        <h1 class="text-center">Voting for The Best Pet</h1>
+        <hr />
+        <br />
+        <div id="loader">
+          <p class="text-center">Loading...</p>
+        </div>
+        <div id="content" style="display: none;">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Votes</th>
+              </tr>
+            </thead>
+            <tbody id="candidatesResults">
+            </tbody>
+          </table>
+          <hr />
+          <form onsubmit="App.castVote(); return false;">
+            <div class="form-group">
+              <label for="candidatesSelect">Select Candidate</label>
+              <select class="form-control" id="candidatesSelect">
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Vote</button>
+          </form>
+          <hr />
+          <p id="accountAddress" class="text-center"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/web3.min.js"></script>
+  <script src="js/truffle-contract.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    function showSortOptions() {
+      var selectedValue = $("#filterOptions").val();
+      $("#age, #breed, #location").hide();
+
+      if (selectedValue === "age") {
+        $("#age").show();
+      } else if (selectedValue === "breed") {
+        $("#breed").show();
+      } else if (selectedValue === "location") {
+        $("#location").show();
+      }
+    }
+  </script>
+
+  <script>
+    function showFilterOptions() {
+      var selectedValue = $("#filterType").val();
+      $("#filterOptions").hide();
+
+      if (selectedValue === "all") {
+        $("#filterOptions").show();
+      } else if (selectedValue === "available") {
+        $("#filterOptions").show();
+      } else if (selectedValue === "adopted") {
+        $("#filterOptions").show();
+      }
+    }
+  </script>
+
+
+</body>
+
 </html>

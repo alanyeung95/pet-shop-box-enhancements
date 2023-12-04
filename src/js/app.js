@@ -4,11 +4,25 @@ App = {
   account: '0x0',
   hasVoted: false,
 
+
   init: async function () {
     // Load pets.
     $.getJSON("../pets.json", function (data) {
       var petsRow = $("#petsRow");
       var petTemplate = $("#petTemplate");
+      App.petsinfo = data;
+
+
+      var breeds = [...new Set(data.map(pet => pet.breed))];
+      var ages = [...new Set(data.map(pet => pet.age))];
+      var locations = [...new Set(data.map(pet => pet.location))]
+      var breedFilter = $("#breedFilter");
+      var ageFilter = $("#ageFilter");
+      var locationFilter = $("#locationFilter");
+      breeds.forEach(breed => breedFilter.append(`<option value="${breed}">${breed}</option>`));
+      ages.forEach(age => ageFilter.append(`<option value="${age}">${age}</option>`));
+      locations.forEach(location => locationFilter.append(`<option value="${location}">${location}</option>`));
+
 
       for (i = 0; i < data.length; i++) {
         petTemplate.find(".panel-title").text(data[i].name);
@@ -67,7 +81,7 @@ App = {
       return App.markAdopted();
     });
 
-    $.getJSON("Election.json", function(election) {
+    $.getJSON("Election.json", function (election) {
       // Instantiate a new truffle contract from the artifact
       App.contracts.Election = TruffleContract(election);
       // Connect provider to interact with contract
@@ -77,7 +91,7 @@ App = {
     });
 
     //new
-    $.getJSON("SendMeEther.json", function(data) {
+    $.getJSON("SendMeEther.json", function (data) {
       // Get the contract artifact file and instantiate it with @truffle/contract
       var SendMeEtherArtifact = data;
       App.contracts.SendMeEther = TruffleContract(SendMeEtherArtifact);
@@ -97,37 +111,54 @@ App = {
 
     //new
     $(document).on("click", ".btn-donate", App.handleDonation);
+
+    // filter
+    $(document).on("click", '.btn-filter', App.updateFilteredPets);
+
+    // $('#filterType').change(function () {
+    //   var selectedFilterType = $(this).val();
+    //   if (selectedFilterType === "age") {
+    //     $("#breedFilter").prop('disabled', true);
+    //     $("#ageFilter").prop('disabled', false);
+    //   } else if (selectedFilterType === "breed") {
+    //     $("#breedFilter").prop('disabled', false);
+    //     $("#ageFilter").prop('disabled', true);
+    //   }
+    // });
+
+
+
   },
 
   //new
-  handleDonation: function(event) {
+  handleDonation: function (event) {
     event.preventDefault();
     var amount = web3.toWei(0.1, "ether"); // Change the amount to your desired value
     var sendMeEtherInstance;
 
-    web3.eth.getAccounts(function(error, accounts) {
-        if (error) {
-            console.log(error);
-        }
+    web3.eth.getAccounts(function (error, accounts) {
+      if (error) {
+        console.log(error);
+      }
 
-        var account = accounts[0];
+      var account = accounts[0];
 
-        App.contracts.SendMeEther.deployed().then(function(instance) {
-            sendMeEtherInstance = instance;
+      App.contracts.SendMeEther.deployed().then(function (instance) {
+        sendMeEtherInstance = instance;
 
-            // Send Ether to the contract using the receiveEther function
-            return sendMeEtherInstance.receiveEther({
-                from: account,
-                value: amount
-            });
-        }).then(function(result) {
-            // Optionally, update UI or perform actions after donation
-            console.log("Donation successful:", result);
-        }).catch(function(err) {
-            console.log(err.message);
+        // Send Ether to the contract using the receiveEther function
+        return sendMeEtherInstance.receiveEther({
+          from: account,
+          value: amount
         });
+      }).then(function (result) {
+        // Optionally, update UI or perform actions after donation
+        console.log("Donation successful:", result);
+      }).catch(function (err) {
+        console.log(err.message);
+      });
     });
-},
+  },
   //end new
 
   markAdopted: function () {
@@ -167,6 +198,7 @@ App = {
         console.log(err.message);
       });
   },
+
   handleAdopt: function (event) {
     event.preventDefault();
 
@@ -183,11 +215,14 @@ App = {
       App.contracts.Adoption.deployed()
         .then(function (instance) {
           adoptionInstance = instance;
-
+          // Set the adopted property of the pet to true
+          App.petsinfo[petId].adopted = true;
+          console.log("adopted petId: " + petId);
           // Execute adopt as a transaction by sending account
           return adoptionInstance.adopt(petId, { from: account });
         })
         .then(function (result) {
+
           return App.markAdopted();
         })
         .catch(function (err) {
@@ -195,6 +230,7 @@ App = {
         });
     });
   },
+
   handleReturn: function (event) {
     event.preventDefault();
 
@@ -210,6 +246,9 @@ App = {
       App.contracts.Adoption.deployed()
         .then(function (instance) {
           adoptionInstance = instance;
+          // Set the adopted property of the pet to false
+          App.petsinfo[petId].adopted = false;
+          console.log("returned petId: " + petId);
           // Execute adopt as a transaction by sending account
           return adoptionInstance.returnPet(petId, { from: account });
         })
@@ -221,6 +260,7 @@ App = {
         });
     });
   },
+
   handleGetAdoptionHistory: function (event) {
     event.preventDefault();
 
@@ -285,12 +325,12 @@ App = {
     $("#adoptionHistoryModal").hide();
   },
 
-  listenForEvents: function() {
-    App.contracts.Election.deployed().then(function(instance) {
+  listenForEvents: function () {
+    App.contracts.Election.deployed().then(function (instance) {
       instance.votedEvent({}, {
         fromBlock: 0,
         toBlock: 'latest'
-      }).watch(function(error, event) {
+      }).watch(function (error, event) {
         console.log("event triggered", event)
         // Reload when a new vote is recorded
         App.render();
@@ -298,82 +338,190 @@ App = {
     });
   },
 
-render: function() {
-var electionInstance;
-var loader = $("#loader");
-var content = $("#content");
+  render: function () {
+    var electionInstance;
+    var loader = $("#loader");
+    var content = $("#content");
 
-loader.show();
-content.hide();
+    loader.show();
+    content.hide();
 
-// Load account data
-web3.eth.getCoinbase(function(err, account) {
-  if (err === null) {
-    App.account = account;
-    $("#accountAddress").html("Your Account: " + account);
-  }
-});
+    // Load account data
+    web3.eth.getCoinbase(function (err, account) {
+      if (err === null) {
+        App.account = account;
+        $("#accountAddress").html("Your Account: " + account);
+      }
+    });
 
-// Load contract data
-//the reason why Promise.all is necessary here is explained in ElectionMapping.txt
-App.contracts.Election.deployed().then(function(instance) {
-  electionInstance = instance;
-  return electionInstance.candidatesCount();
-}).then(function(candidatesCount) {
-  var candArray = [];
-  for (var i = 1; i <= candidatesCount; i++) {
-    candArray.push(electionInstance.candidates(i));
-  }
-  Promise.all(candArray).then(function(values) {
-      var candidatesResults = $("#candidatesResults");
-      candidatesResults.empty();
+    // Load contract data
+    //the reason why Promise.all is necessary here is explained in ElectionMapping.txt
+    App.contracts.Election.deployed().then(function (instance) {
+      electionInstance = instance;
+      return electionInstance.candidatesCount();
+    }).then(function (candidatesCount) {
+      var candArray = [];
+      for (var i = 1; i <= candidatesCount; i++) {
+        candArray.push(electionInstance.candidates(i));
+      }
+      Promise.all(candArray).then(function (values) {
+        var candidatesResults = $("#candidatesResults");
+        candidatesResults.empty();
 
-      var candidatesSelect = $('#candidatesSelect');
-      candidatesSelect.empty();
-    for (var i = 0; i < candidatesCount; i++) {
-      var id = values[i][0];
-      var name = values[i][1];
-      var voteCount = values[i][2];
+        var candidatesSelect = $('#candidatesSelect');
+        candidatesSelect.empty();
+        for (var i = 0; i < candidatesCount; i++) {
+          var id = values[i][0];
+          var name = values[i][1];
+          var voteCount = values[i][2];
 
-      // Render candidate Result
-      var candidateTemplate = "<tr><th>" + id + "</th><td>" + name + "</td><td>" + voteCount + "</td></tr>"
-      candidatesResults.append(candidateTemplate);
+          // Render candidate Result
+          var candidateTemplate = "<tr><th>" + id + "</th><td>" + name + "</td><td>" + voteCount + "</td></tr>"
+          candidatesResults.append(candidateTemplate);
 
-      // Render candidate ballot option
-      var candidateOption = "<option value='" + id + "' >" + name + "</ option>"
-      candidatesSelect.append(candidateOption);
+          // Render candidate ballot option
+          var candidateOption = "<option value='" + id + "' >" + name + "</ option>"
+          candidatesSelect.append(candidateOption);
+        }
+      });
+      return electionInstance.voters(App.account);
+    }).then(function (hasVoted) {
+      // Do not allow a user to vote
+      if (hasVoted) {
+        $('form').hide();
+      }
+      loader.hide();
+      content.show();
+    }).catch(function (error) {
+      console.warn(error);
+    });
+  },
+
+
+  // Function to update filtered pets based on selected criteria
+  updateFilteredPets: function () {
+
+    console.log("filterpets");
+    var data = App.petsinfo;
+    var selectedFilterType = $("#filterType").val();
+    var selectedSortOption = $("#filterOptions").val();
+    var selectedBreed = $("#breedFilter").val();
+    var selectedAge = $("#ageFilter").val();
+    var selectedLocation = $("#locationFilter").val();
+
+
+    if (selectedFilterType == "all") {
+      var filteredPets = data;
+      App.renderPets(filteredPets);
+    } else if (selectedFilterType == "available") {
+      var filteredPets = data.filter(pet => pet.adopted == false);
+      App.renderPets(filteredPets);
+    } else if (selectedFilterType == "adopted") {
+      var filteredPets = data.filter(pet => pet.adopted == true);
+
     }
-  });
-  return electionInstance.voters(App.account);
-}).then(function(hasVoted) {
-  // Do not allow a user to vote
-  if(hasVoted) {
-    $('form').hide();
-  }
-  loader.hide();
-  content.show();
-}).catch(function(error) {
-  console.warn(error);
-});
+
+
+    if (selectedSortOption === "all") {
+      filteredPets = filteredPets;
+    }
+    else if (selectedSortOption === "age") {
+      if (selectedAge === "all age") {
+        filteredPets = filteredPets;
+        App.renderPets(filteredPets);
+      } else {
+        filteredPets = filteredPets.filter(pet => pet.age == selectedAge);
+        App.renderPets(filteredPets);
+      }
+    }
+    else if (selectedSortOption === "breed") {
+      if (selectedBreed === "all breed") {
+        filteredPets = filteredPets;
+        App.renderPets(filteredPets);
+      } else {
+        filteredPets = filteredPets.filter(pet => pet.breed === selectedBreed);
+        App.renderPets(filteredPets);
+      }
+    }
+    else if (selectedSortOption === "location") {
+      if (selectedLocation === "all location") {
+        filteredPets = filteredPets;
+        App.renderPets(filteredPets);
+      } else {
+        filteredPets = filteredPets.filter(pet => pet.location === selectedLocation);
+        App.renderPets(filteredPets);
+      }
+    }
   },
 
 
 
+  // Function to render pets
+  renderPets: function (pets) {
 
-  castVote: function() {
+    var petsRow = $("#petsRow");
+    var petTemplate = $("#petTemplate");
+
+
+    // Clear existing pets
+    petsRow.empty();
+
+    for (var i = 0; i < pets.length; i++) {
+      var pet = pets[i];
+
+      // Clone the pet template
+      var newPet = petTemplate.clone();
+
+      // Update the content of the cloned template with pet information
+      newPet.find(".panel-title").text(pet.name);
+      newPet.find("img").attr("src", pet.picture);
+      newPet.find(".pet-breed").text(pet.breed);
+      newPet.find(".pet-age").text(pet.age);
+      newPet.find(".pet-location").text(pet.location);
+      if (pet.adopted == true) {
+        newPet
+          .find(".btn-adopt")
+          .text("Success")
+          .attr("disabled", true);
+
+        newPet
+          .find(".btn-return")
+          .css("display", "inline-block");
+      } else {
+        newPet
+          .find(".btn-adopt")
+          .text("Adopt")
+          .attr("disabled", false);
+
+        newPet.find(".btn-return").css("display", "none");
+      }
+      newPet.find(".btn-adopt").attr("data-id", pet.id);
+      newPet.find(".btn-return").attr("data-id", pet.id);
+      newPet.find(".btn-history").attr("data-id", pet.id);
+
+
+      // Append the updated template to the petsRow
+      petsRow.append(newPet.html());
+    }
+  },
+
+
+  castVote: function () {
     var candidateId = $('#candidatesSelect').val();
-    App.contracts.Election.deployed().then(function(instance) {
+    App.contracts.Election.deployed().then(function (instance) {
       return instance.vote(candidateId, { from: App.account });
-    }).then(function(result) {
+    }).then(function (result) {
       // Wait for votes to update
       $("#content").hide();
       $("#loader").show();
-    }).catch(function(err) {
+    }).catch(function (err) {
       console.error(err);
     });
   }
 
 };
+
+
 
 $(function () {
   $(window).load(function () {
