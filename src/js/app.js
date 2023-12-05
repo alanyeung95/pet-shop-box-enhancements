@@ -12,7 +12,7 @@ App = {
       var petTemplate = $("#petTemplate");
       // App.petsinfo = data;
       App.setPetsInfo(data);
-
+      App.check = 0;
 
       var breeds = [...new Set(data.map(pet => pet.breed))];
       var ages = [...new Set(data.map(pet => pet.age))];
@@ -405,6 +405,7 @@ App = {
       var filteredPets = data;
       App.renderPets(filteredPets);
     } else if (selectedFilterType == "available") {
+      App.checkAdopted();
       var filteredPets = data.filter(pet => pet.adopted == false);
       App.renderPets(filteredPets);
     } else if (selectedFilterType == "adopted") {
@@ -470,10 +471,12 @@ App = {
       newPet.find(".pet-breed").text(pet.breed);
       newPet.find(".pet-age").text(pet.age);
       newPet.find(".pet-location").text(pet.location);
-      var adopted = App.checkAdopted(pet.id);
-      console.log("adopted: " + adopted);
-      if (adopted == 1) {
+
+      App.checkAdopted(pet.id);
+      console.log('check', App.check);
+      if (pet.adopted == 1) {
         newPet
+          .eq(pet.id)
           .find(".btn-adopt")
           .text("Success")
           .attr("disabled", true);
@@ -483,16 +486,18 @@ App = {
           .css("display", "inline-block");
       } else {
         newPet
+          .eq(pet.id)
           .find(".btn-adopt")
           .text("Adopt")
           .attr("disabled", false);
 
-        newPet.find(".btn-return").css("display", "none");
+        newPet
+          .find(".btn-return")
+          .css("display", "none");
       };
       // newPet.find(".btn-adopt").attr("data-id", pet.id);
       // newPet.find(".btn-return").attr("data-id", pet.id);
       // newPet.find(".btn-history").attr("data-id", pet.id);
-
       // Append the updated template to the petsRow
       petsRow.append(newPet.html());
     };
@@ -520,11 +525,14 @@ App = {
           // var users = result[0];
           // var timestamps = result[1];
           // var transactionOrigins = result[2];
-          var actions = result[3][result.length - 1].c[0];
-          if (actions == 0) {
-            return 0;
+
+          var actions = result[3][result[3].length - 1].c[0] === 0 ? 0 : 1;
+          console.log('actions', actions);
+          var a = actions
+          if (a == 0) {
+            App.check = 0;
           } else {
-            return 1;
+            App.check = 1;
           };
         })
         .catch(function (err) {
@@ -549,10 +557,7 @@ App = {
       console.error(err);
     });
   }
-
-
 };
-
 
 
 $(function () {

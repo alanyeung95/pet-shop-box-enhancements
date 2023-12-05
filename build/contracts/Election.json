@@ -11104,13 +11104,12 @@
         }
       },
       "links": {},
-      "address": "0x940241fb553B84E86bCD4959a7fEB874c3Bb2DDB",
-      "transactionHash": "0xad8e3d6a0edca2fcf4467768833f7f0dd1013b02fdcc456610264d435d256905"
+      "address": "0xD4439763184f2b4E3B2CbE171BA00c5508D49BC2",
+      "transactionHash": "0xe7c1495f202a031f2b4a2ff2c5ece758875f8b968477ec4f3e7eef0c62868db0"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2023-12-04T09:30:48.569Z",
-  "networkType": "ethereum",
+  "updatedAt": "2023-12-05T04:27:01.877Z",
   "devdoc": {
     "methods": {}
   },
