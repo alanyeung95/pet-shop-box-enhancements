@@ -12,7 +12,8 @@ App = {
       var petTemplate = $("#petTemplate");
       // App.petsinfo = data;
       App.setPetsInfo(data);
-      App.check = 0;
+
+      // App.check = 0;
 
       var breeds = [...new Set(data.map(pet => pet.breed))];
       var ages = [...new Set(data.map(pet => pet.age))];
@@ -77,6 +78,9 @@ App = {
 
       // Set the provider for our contract
       App.contracts.Adoption.setProvider(App.web3Provider);
+
+      // Init adopted pets
+      App.initadopted();
 
       // Use our contract to retrieve and mark the adopted pets
       return App.markAdopted();
@@ -210,8 +214,8 @@ App = {
         })
         .then(function (result) {
           // Set the adopted property of the pet to true
-          petsinfo[petId].adopted = true;
-          console.log("adopted petId: " + petId);
+          // petsinfo[petId].adopted = true;
+          // console.log("adopted petId: " + petId);
           return App.markAdopted();
         })
         .catch(function (err) {
@@ -242,8 +246,8 @@ App = {
         })
         .then(function (result) {
           // Set the adopted property of the pet to false
-          petsinfo[petId].adopted = false;
-          console.log("returned petId: " + petId);
+          // petsinfo[petId].adopted = false;
+          // console.log("returned petId: " + petId);
           return App.markAdopted();
         })
         .catch(function (err) {
@@ -286,7 +290,6 @@ App = {
             var timestamp = new Date(result[1][i].c[0] * 1000).toLocaleString();
             var transactionOrigin = result[2][i];
             var action = result[3][i].c[0] === 0 ? "Adopted" : "Returned";
-
             // Format the history entry string
             var entryString =
               "Action: " +
@@ -390,10 +393,12 @@ App = {
 
 
   // Function to update filtered pets based on selected criteria
-  updateFilteredPets: function () {
+  updateFilteredPets: function (event) {
+    event.preventDefault();
 
-    console.log("filterpets");
-    var data = petsinfo;
+    // console.log("filterpets");
+    App.initadopted();
+    var data = App.getPetsInfo();
     var selectedFilterType = $("#filterType").val();
     var selectedSortOption = $("#filterOptions").val();
     var selectedBreed = $("#breedFilter").val();
@@ -401,17 +406,17 @@ App = {
     var selectedLocation = $("#locationFilter").val();
 
 
+
     if (selectedFilterType == "all") {
       var filteredPets = data;
       App.renderPets(filteredPets);
     } else if (selectedFilterType == "available") {
-      App.checkAdopted();
-      var filteredPets = data.filter(pet => pet.adopted == false);
-      App.renderPets(filteredPets);
+      var filteredPets = data.filter(pet => pet.adopted != 'Adopted');
     } else if (selectedFilterType == "adopted") {
-      var filteredPets = data.filter(pet => pet.adopted == true);
-
+      var filteredPets = data.filter(pet => pet.adopted == 'Adopted');
     }
+
+    console.log("selectedSortOption", filteredPets);
 
 
     if (selectedSortOption === "all") {
@@ -451,7 +456,7 @@ App = {
 
   // Function to render pets
   renderPets: function (pets) {
-    console.log("renderpets");
+    // console.log("renderpets");
     var petsRow = $("#petsRow");
     var petTemplate = $("#petTemplate");
 
@@ -461,7 +466,6 @@ App = {
 
     for (var i = 0; i < pets.length; i++) {
       var pet = pets[i];
-
       // Clone the pet template
       var newPet = petTemplate.clone();
 
@@ -472,11 +476,8 @@ App = {
       newPet.find(".pet-age").text(pet.age);
       newPet.find(".pet-location").text(pet.location);
 
-      App.checkAdopted(pet.id);
-      console.log('check', App.check);
-      if (pet.adopted == 1) {
+      if (pet.adopted == "Adopted") {
         newPet
-          .eq(pet.id)
           .find(".btn-adopt")
           .text("Success")
           .attr("disabled", true);
@@ -486,7 +487,6 @@ App = {
           .css("display", "inline-block");
       } else {
         newPet
-          .eq(pet.id)
           .find(".btn-adopt")
           .text("Adopt")
           .attr("disabled", false);
@@ -522,18 +522,14 @@ App = {
           });
         })
         .then(function (result) {
-          // var users = result[0];
-          // var timestamps = result[1];
-          // var transactionOrigins = result[2];
+          //var action = result[3][result[3].length - 1].c[0] === 0 ? 0 : 1;
+          for (var i = 0; i < result[0].length; i++) {
+            var action = result[3][i].c[0] === 0 ? "Adopted" : "Returned";
+            console.log("action", action);
+          }
+          App.setPetsAdopted(action, petid);
 
-          var actions = result[3][result[3].length - 1].c[0] === 0 ? 0 : 1;
-          console.log('actions', actions);
-          var a = actions
-          if (a == 0) {
-            App.check = 0;
-          } else {
-            App.check = 1;
-          };
+
         })
         .catch(function (err) {
           console.error(err);
@@ -541,9 +537,43 @@ App = {
     });
   },
 
-  setPetsInfo: function (data) {
-    petsinfo = data;
+  setPetsAdopted: function (data, petid) {
+
+    var pet = App.petsinfo.find(pet => pet.id === petid);
+    // console.log("petid", pet);
+    pet.adopted = data;
   },
+
+  setPetsInfo: function (data) {
+    App.petsinfo = data;
+  },
+
+  getPetsInfo: function () {
+    return App.petsinfo;
+  },
+
+  initadopted: function () {
+    App.checkAdopted(0);
+    App.checkAdopted(1);
+    App.checkAdopted(2);
+    App.checkAdopted(3);
+    App.checkAdopted(4);
+    App.checkAdopted(5);
+    App.checkAdopted(6);
+    App.checkAdopted(7);
+    App.checkAdopted(8);
+    App.checkAdopted(9);
+    App.checkAdopted(10);
+    App.checkAdopted(11);
+    App.checkAdopted(12);
+    App.checkAdopted(13);
+    App.checkAdopted(14);
+    App.checkAdopted(15);
+  },
+
+
+
+
 
   castVote: function () {
     var candidateId = $('#candidatesSelect').val();
